@@ -3,4 +3,5 @@ SRC     = main.cc
 CC      = g++
 
 all: $(SRC)
+	./elftabs.awk /usr/include/elf.h
 	$(CC) $(CFLAGS) $^
