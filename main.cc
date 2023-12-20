@@ -110,14 +110,41 @@ static void disasm_64(FILE *fp)
 
                 Fread(&phdr, sizeof(phdr), 1, fp);
                 printf("\t[%u] = {\n", i);
-                printf("\t\tp_type   = %u,\n", phdr.p_type);
-                printf("\t\tp_flags  = %u,\n", phdr.p_flags);
-                printf("\t\tp_offset = %lu,\n", phdr.p_offset);
-                printf("\t\tp_vaddr  = %lu,\n", phdr.p_vaddr);
-                printf("\t\tp_paddr  = %lu,\n", phdr.p_paddr);
-                printf("\t\tp_filesz = %lu,\n", phdr.p_filesz);
-                printf("\t\tp_memsz  = %lu,\n", phdr.p_memsz);
-                printf("\t\tp_align  = %lu\n", phdr.p_align);
+                printf("\t\tp_type    = %u,\n", phdr.p_type);
+                printf("\t\tp_flags   = %u,\n", phdr.p_flags);
+                printf("\t\tp_offset  = %lu,\n", phdr.p_offset);
+                printf("\t\tp_vaddr   = %lu,\n", phdr.p_vaddr);
+                printf("\t\tp_paddr   = %lu,\n", phdr.p_paddr);
+                printf("\t\tp_filesz  = %lu,\n", phdr.p_filesz);
+                printf("\t\tp_memsz   = %lu,\n", phdr.p_memsz);
+                printf("\t\tp_align   = %lu\n", phdr.p_align);
+
+                unsigned char *seg = (unsigned char *)malloc(phdr.p_filesz);
+                if (!seg)
+                        err(EX_SOFTWARE, "malloc");
+
+                long off = ftell(fp);
+                Fseek(fp, phdr.p_offset, SEEK_SET);
+                Fread(seg, sizeof(*seg), phdr.p_filesz, fp);
+
+                printf("\t\tp_segment = [\n");
+                uint64_t linelen = 0;
+                printf("\t\t\t");
+                for (uint64_t i = 0; i < phdr.p_filesz; i++) {
+                        if (linelen == 16) {
+                                printf("\n");
+                                printf("\t\t\t");
+                                linelen = 0;
+                        }
+                        printf("%3d ", seg[i]);
+                        linelen++;
+                }
+                if (linelen > 0)
+                        printf("\n");
+                free(seg);
+                seg = NULL;
+
+                Fseek(fp, off, SEEK_SET);
                 printf("\t},\n");
         }
         printf("]\n");
