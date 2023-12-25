@@ -136,13 +136,62 @@ static void disasm_64(FILE *fp)
                                 printf("\t\t\t");
                                 linelen = 0;
                         }
-                        printf("%3d ", seg[i]);
+                        printf("%3x ", seg[i]);
                         linelen++;
                 }
                 if (linelen > 0)
                         printf("\n");
                 free(seg);
                 seg = NULL;
+                printf("\t\t]\n");
+
+                Fseek(fp, off, SEEK_SET);
+                printf("\t},\n");
+        }
+        printf("]\n");
+
+        Fseek(fp, hdr.e_shoff, SEEK_SET);
+        for (uint16_t i = 0; i < hdr.e_shnum; i++) {
+                Elf64_Shdr shdr;
+
+                Fread(&shdr, sizeof(shdr), 1, fp);
+                printf("\t[%d] = {\n", i);
+                printf("\t\tsh_name      = %x\n", shdr.sh_name);
+                printf("\t\tsh_type      = %x\n", shdr.sh_type);
+                printf("\t\tsh_flags     = %lx\n", shdr.sh_flags);
+                printf("\t\tsh_addr      = %lx\n", shdr.sh_addr);
+                printf("\t\tsh_offset    = %lx\n", shdr.sh_offset);
+                printf("\t\tsh_size      = %lx\n", shdr.sh_size);
+                printf("\t\tsh_link      = %x\n", shdr.sh_link);
+                printf("\t\tsh_info      = %x\n", shdr.sh_info);
+                printf("\t\tsh_addralign = %lx\n", shdr.sh_addralign);
+                printf("\t\tsh_entsize   = %lx\n", shdr.sh_entsize);
+
+                unsigned char *data = (unsigned char *)malloc(shdr.sh_size);
+                if (!data)
+                        err(EX_SOFTWARE, "malloc");
+
+                long off = ftell(fp);
+                Fseek(fp, shdr.sh_offset, SEEK_SET);
+                Fread(data, sizeof(*data), shdr.sh_size, fp);
+
+                printf("\t\tsh_section = [\n");
+                uint64_t linelen = 0;
+                printf("\t\t\t");
+                for (uint64_t i = 0; i < shdr.sh_size; i++) {
+                        if (linelen == 16) {
+                                printf("\n");
+                                printf("\t\t\t");
+                                linelen = 0;
+                        }
+                        printf("%3x ", data[i]);
+                        linelen++;
+                }
+                if (linelen > 0)
+                        printf("\n");
+                free(data);
+                data = NULL;
+                printf("\t\t]\n");
 
                 Fseek(fp, off, SEEK_SET);
                 printf("\t},\n");
